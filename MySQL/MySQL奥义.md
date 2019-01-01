@@ -53,6 +53,16 @@
 
 在“可重复读”隔离级别下，这个视图是在事务启动时创建的，整个事务存在期间都用这个视图；在“读提交”隔离级别下，这个视图是在每个 SQL 语句开始执行的时候创建的；“读未提交”隔离级别下直接返回记录上的最新值，没有视图概念；而“串行化”隔离级别下直接用加锁的方式来避免并行访问。
 
+#### 启动方式
+
+1. set autocommit=0，这个命令会将这个线程的自动提交关掉。意味着如果你只执行一个select语句，这个事物就启动了，而且并**不会自动提交**。这个事物持续存在直到你主动执行commit或rollback语句，或者断开连接；导致接下来的查询都在事务中，如果是长连接，就导致了意外的长事务。
+
+2. set autocommit=1，显式启动事务语句， begin 或 start transaction。配套的提交语句是 commit，回滚语句是rollback；事务开始时需要主动执行一次“begin”，多一次交互。
+
+   START TRANSACTION 后，只有当commit数据才会生效，ROLLBACK后就会回滚；如果没有START TRANSACTION ，执行每个SQL自动提交，调用ROLLBACK是没有用的。
+
+3. 在set autocommit=1情况下，用begin启动事务，执行commit work and chain，则是提交事务并启动下一个事务，这样省去了再次执行begin语句的开销。
+
 
 
 ### 存储引擎
