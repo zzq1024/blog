@@ -1,2 +1,2 @@
-# 第二章：MySQL
+# MySQL
 
