@@ -84,6 +84,10 @@ echo 是语法结构，也就是关键字，不是函数。使用的时候不用
 * array_merge()将两个或多个数组的单元合并起来，一个数组中的值附加在前一个数组的后面。返回作为结果的数组。如果输入的数组中有相同的字符串键名，则该键名后面的值将覆盖前一个值。然而，如果数组包含数字键名，后面的值将不会覆盖原来的值，而是附加到后面。
 * 对于使用+，如果数组中有相同的key(数字键名和字符串键名处理一样)，则会把最先出现的值作为最终结果返回，而把后面的数组拥有相同键名的那些值“抛弃”掉（注意：不是覆盖而是保留最先出现的那个值）
 
+#### filter_var与filter_var_array
+* filter_var($variable, $filter) //
+* filter_var_array(array $data, $definition) //filter为FILTER_VALIDATE_REGEXP时,参数必须是关联数组
+
 #### 序列化(json，serialize，igbinary，msgpack)比较
 
 * 占用空间方面，igbinary节省空间明显优势，比如在json一个数组5.4k大小的数据，serialize方式要8.6k，而使用igbinary方式，仅需2.4k，近乎为serialize方式的1/4，但在小数组方面msgpack方式更具优势，igbinary占用空间123，而msgpack方式仅为102。但是在大数组情况下，明显igbinary方式优势更明显。大数组igbinary胜出，小数组msgpack胜出。
