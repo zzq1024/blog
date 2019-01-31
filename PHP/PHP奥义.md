@@ -273,7 +273,7 @@ PHP使用了引用计数(reference counting)这种单纯的垃圾回收(garbage 
 * View（视图）是应用程序中处理数据显示的部分
 * Controller（控制器）是应用程序中处理用户交互的部分，接收视图的请求传到Model层处理并返回结果数据在视图显示
 
-####MVC、smarty、框架区别
+#### MVC、smarty、框架区别
 
 * MVC是model、controller、view 的缩写，是一种非常实用的网站开发框架，通过合理的逻辑处理以及任务分配，使得网站开发变得非常快速
 * smarty是一种模板引擎（是庞大的完善的正则表达式替换库），主要是用来处理网页模板视图（MVC中的V）的，可以替换网页中的元素或者实现基于模板的网页输出。而且非常容易操作，效率也是非常快
@@ -293,6 +293,20 @@ PHP使用了引用计数(reference counting)这种单纯的垃圾回收(garbage 
 #### slim
 ##### 中间件调用顺序
 slim添加中间件时会一层一层的套，先添加的在最里面，后添加的在最外面，这样request请求进来时也是从外层到里层再到外层（先添加的后执行）。应用级中间件先执行，执行到$route->run()时，会继续执行路由级中间件
+```php
+// 第一种方式（应用级中间件）
+$app->add(new HMiddleWare());
+// 第二种方式 （路由中间件）
+$app->get('/hello/{name}', function ($request, $response, $args) {
+    return $response->getBody()->write("Hello, " . $args['name']);
+})->add(function($request, $response, $next) {
+    $response->getBody()->write('BEFORE middle1');
+    $response = $next($request, $response);
+    $response->getBody()->write('AFTER middle1');
+
+    return $response;
+});
+```
 
 
 
