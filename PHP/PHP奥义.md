@@ -295,17 +295,12 @@ PHP使用了引用计数(reference counting)这种单纯的垃圾回收(garbage 
 slim添加中间件时会一层一层的套，先添加的在最里面，后添加的在最外面，这样request请求进来时也是从外层到里层再到外层（先添加的后执行）。应用级中间件先执行，执行到$route->run()时，会继续执行路由级中间件
 ```php
 // 第一种方式（应用级中间件）
-$app->add(new HMiddleWare());
+$app->add(AMiddleware::class)->add(BMiddleware::class);
 // 第二种方式 （路由中间件）
 $app->get('/hello/{name}', function ($request, $response, $args) {
     return $response->getBody()->write("Hello, " . $args['name']);
-})->add(function($request, $response, $next) {
-    $response->getBody()->write('BEFORE middle1');
-    $response = $next($request, $response);
-    $response->getBody()->write('AFTER middle1');
-
-    return $response;
-});
+})->add(CMiddleware::class)->add(DMiddleware::class);
+//执行顺序：BMiddleware->AMiddleware->DMiddleware->CMiddleware->控制器
 ```
 
 
