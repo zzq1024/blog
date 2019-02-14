@@ -233,3 +233,6 @@ MySQL读写分离能提高系统性能的原因在于：
 * 不给root权限，合理安排权限
 * 关闭远程访问
 * 设置MySQL数据文件的权限
+
+### 日常排查
+mysql查看当前连接数：进入mysql命令行执行 show processlist; 可以显示前100条连接信息 show full processlist; 可以显示全部。随便说下，如果用普通账号登录，就只显示这用户的。
