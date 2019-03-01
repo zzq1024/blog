@@ -21,3 +21,14 @@ chang'yong
 - 负载均衡
 - 缓存静态内容
 - 安全
+
+### 终端命令
+#### 使用&后台运行程序
+- 结果会输出到终端
+- 使用Ctrl + C发送SIGINTI信号，程序免疫
+- 关闭session（关闭终端）发送SIGHUP信号，程序关闭
+#### 使用nohup运行程序
+- 结果默认会输出到nohup.out
+- 使用Ctrl + C发送SIGINT信号，程序关闭
+- 关闭session发送SIGHUP信号，程序免疫
+平时可以使用nohup与&启动程序，同时免疫SIGINT与SIGHUP信号，开启守护进程
