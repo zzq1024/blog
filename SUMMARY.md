@@ -4,6 +4,7 @@
 * [PHP](PHP/README.md)
     * [第一节：PHP奥义](PHP/PHP奥义.md)
     * [第二节：真题](PHP/真题.md)
+    * [第三节：经典面试题](PHP/经典面试题.md)
 * [MySQL](MySQL/README.md)
     * [第一节：MySQL奥义](MySQL/MySQL奥义.md)
     * [第二节：MySQL开发规范](MySQL/MySQL开发规范.md)
