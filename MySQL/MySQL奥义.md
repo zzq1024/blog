@@ -27,6 +27,12 @@
 
 使用场景：唯一索引不能使用change buffer，只有普通索引可以使用；写多读少的业务适用（如日志系统）
 
+#### count
+
+count()用于返回结果集的个数，如果count函数中参数为字段，会返回数据不为NULL的函数，因此尽量用count(*)、count(1)、count(主键ID)，count(1)要比count(主键ID)快，省去了每行ID对应值的解析；
+
+效率排序：count(*)≈count(1)>count(主键ID)>count(字段)
+
 
 
 ### 事务
@@ -343,3 +349,30 @@ MySQL读写分离能提高系统性能的原因在于：
 
 ### 日常排查
 mysql查看当前连接数：进入mysql命令行执行 show processlist; 可以显示前100条连接信息 show full processlist; 可以显示全部。随便说下，如果用普通账号登录，就只显示这用户的。
+
+### 日常使用
+
+#### 删除
+
+- drop table命令，可以将.ibd（表数据文件）删除；
+- delete命令只是把记录的位置或者数据页标记为“可复用”，但磁盘文件大小是不会变的，这时未使用的空间就是空洞；插入操作造成的页分裂也会产生空洞。
+- alter table A engine=InnoDB命令可以重建表，对于很大的表来说，很消耗IO和CPU，要在业务低峰时使用；也可以建一个相同表结构的B表，将A表数据迁移到B后，业务逻辑再切到B表。
+
+#### Online DDL的流程：
+
+1.建立临时文件，扫描表A主键所有数据页
+
+2.用表A的记录生成B+树，存在临时文件中
+
+3.生成临时文件过程中，将A表的操作记录存于一个日志文件中
+
+4.临时文件生成后，将日志文件应用到临时文件，得到逻辑结构上与表A相同的数据文件
+
+5.用临时文件代替表A的数据文件
+
+#### 重建表的不同方式
+
+- 从MySQL5.6开始，alter table t engine=InnoDB（也就是recreate）默认就是以上的流程了
+- analize table t 其实不是重建表，只是对表的索引重新统计，没有修改数据，这个过程加了MDL读锁
+- optimize table t 等于 recreate+analize
+- truncate可以理解为drop+create
