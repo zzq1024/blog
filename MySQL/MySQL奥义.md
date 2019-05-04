@@ -383,6 +383,3 @@ mysql查看当前连接数：进入mysql命令行执行 show processlist; 可以
 - analize table t 其实不是重建表，只是对表的索引重新统计，没有修改数据，这个过程加了MDL读锁
 - optimize table t 等于 recreate+analize
 - truncate可以理解为drop+create
-### MySQL与ES
-ES不是数据库，它适合于海量数据、更新频率很低的数据(ES没有事务也不适合处理并行更改数据)。
-ES是全文搜索引擎，能够对中文进行全文搜索，处理同义词和根据相关性给文档打分；能根据同一份数据生成分析和聚合的结果；在没有大量工作进程（线程）的情况下能做到对数据的实时处理。
