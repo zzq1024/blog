@@ -98,6 +98,12 @@ echo 是语法结构，也就是关键字，不是函数。使用的时候不用
 * 在反序列方面igbinary的比序列化过程更快，当然也是最快的，但是这种快也是有成本代价的（调用igbinary_unserialize时，传递非法数据，会导致整个php进程死掉），参见最后的注意事项，最慢的为json_decode方式，猜测原因可能在于PHP作为服务器端应用，最多的场景是encode，而decode的最常见的为js处理方式，性能不是很理想。
 * 整体性能是序列化和反序列化之和，简单对比会发现，json是最差的，次之是原生serialize，再次为igbinary的方式，最优的为msgpack，不过igbinary和msgpack相差真的非常小，而在占用空间方面，小数据时msgpack胜出，大数据时igbinary胜出，算是各有千秋。所以，如果追求极致的性能，可以考虑使用msgpack，如果对是使用空间要求苛刻，那就选择igbinary方式，估计这也是PHPRedis选择igbinary作为内置序列化方式的原因之一，另外还有一个原因，考虑到Redis应用场景多是一写多读，要保证反序列化性能足够高，非igbinary莫属。
 
+#### file_get_contents与curl的区别
+* fopen /file_get_contents 每次请求都会重新做DNS查询，并不对 DNS信息进行缓存。但是CURL会自动对DNS信息进行缓存。对同一域名下的网页或者图片的请求只需要一次DNS查询。这大大减少了DNS查询的次数。所以CURL的性能比fopen /file_get_contents 好很多。
+* fopen /file_get_contents 在请求HTTP时，使用的是http_fopen_wrapper，不会keeplive。而curl却可以。这样在多次请求多个链接时，curl效率会好一些。
+* fopen / file_get_contents 函数会受到php.ini文件中allow_url_open选项配置的影响。如果该配置关闭了，则该函数也就失效了。而curl不受该配置的影响。
+* curl 可以模拟多种请求，例如：POST数据，表单提交等，用户可以按照自己的需求来定制请求。而fopen / file_get_contents只能使用get方式获取数据。
+
 #### 在定义函数中…$args用于把参数组合形成一个数组，在调用函数中…$arr用于把数组展开为函数参数。正好是相反的过程
 
 ```php
