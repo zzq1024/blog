@@ -1,4 +1,4 @@
-# Nginx
+# 第一节：Nginx
 
 ### 代理
 
@@ -22,13 +22,28 @@ chang'yong
 - 缓存静态内容
 - 安全
 
+
+
 ### 终端命令
+
 #### 使用&后台运行程序
+
 - 结果会输出到终端
 - 使用Ctrl + C发送SIGINTI信号，程序免疫
 - 关闭session（关闭终端）发送SIGHUP信号，程序关闭
+
 #### 使用nohup运行程序
+
 - 结果默认会输出到nohup.out
 - 使用Ctrl + C发送SIGINT信号，程序关闭
 - 关闭session发送SIGHUP信号，程序免疫
-平时可以使用nohup与&启动程序，同时免疫SIGINT与SIGHUP信号，开启守护进程
+  平时可以使用nohup与&启动程序，同时免疫SIGINT与SIGHUP信号，开启守护进程
+
+
+
+### nginx.conf
+
+- rewrite重定向url（可以美化URL）
+- location优先级：(location =) > (location 完整路径) > (location ^~ 路径) > (location ~,~* 正则顺序，如果有两个相同正则，会直接按第一个正则为准，不会被下边的覆盖) > (location 部分起始路径) > (/)
+- 如果直接访问ip:port（对应多个HOST），会访问第一个匹配的（引入文件顺序，文件内server配置顺序）；
+  如果直接访问host（对应多个port）,会访问第一个匹配的（引入文件顺序，文件内server配置顺序）
