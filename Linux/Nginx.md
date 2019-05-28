@@ -54,7 +54,7 @@ chang'yong
 - server块：配置虚拟主机的相关参数，一个http中可以有多个server。
 - location块：配置请求的路由，以及各种页面的处理情况。
 #### nginx.conf 基本配置模板
-```lua
+```
 #配置用户或者组，默认为nobody nobody。
 #user administrator administrators; 
 #允许生成的进程数，默认为1
