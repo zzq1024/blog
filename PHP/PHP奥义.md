@@ -1,5 +1,12 @@
 # 第一节：PHP奥义
 
+### 不足
+TCP断开连接几次握手
+LRU
+strace、awk
+redis分布式
+PHP-cgi在PHP代码更新后怎么处理
+
 ### PHP基础篇
 
 #### 基础类型
