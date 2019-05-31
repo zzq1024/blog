@@ -107,13 +107,13 @@ http {
 
 #设定实际的服务器列表
    upstream mysvr1 {   
-     server 127.0.0.1:7878;
+     server 127.0.0.1:7878 max_fails=1 fail_timeout=10s; #在单位周期为fail_timeout设置的时间，中达到max_fails次数，那么接将节点标记为不可用，并等待下一个周期（同样时常为fail_timeout）再一次去请求
      server 192.168.10.121:3333 backup; #热备(其它所有的非backup机器down或者忙的时候，请求backup机器))
    }
    upstream mysvr2 {
 #weigth参数表示权值，权值越高被分配到的几率越大
      server 192.168.1.11:80 weight=5;
-     server 192.168.1.12:80 weight=1;
+     server 192.168.1.12:80 weight=1 down; #表示该服务器已经停用
      server 192.168.1.13:80 weight=6;
    }
    upstream https-svr {
