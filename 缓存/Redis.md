@@ -60,6 +60,10 @@ Hash是一个string类型的field和value的映射表（键值对）；
 
 应用：排行榜
 
+##### BitMap
+setbit KEY_NAME OFFSET VALUE;offset是偏移量,value只能是0,1
+应用：记录登录次数（活跃度）
+
 
 
 #### phpredis:connect与pconnect
