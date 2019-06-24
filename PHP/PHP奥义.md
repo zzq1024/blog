@@ -432,8 +432,24 @@ nginx作为前端服务器，解析HTTP请求，通过配置文件找到server�
 **CGI**：公共网关接口，HTTP Server和一个PHP独立的进程之间的协议，以CGI方式运行时,web server将用户请求以消息的方式转交给PHP独立进程,PHP与web服务之间无从属关系。CGI有很多缺点，每接收一个请求就要fork一个进程处理，只能接收一个请求作出一个响应，请求结束后该进程就会释放。
 
 **FastCGI**：是对CGI的改进，Fastcgi会先启一个master，解析配置文件，初始化执行环境，然后再启动多个worker，常驻内存的。当请求过来时，master会传递给一个worker，然后立即可以接受下一个请求。这样就避免了重复的劳动，效率自然是高。而且当worker不够用时，master可以根据配置预先启动几个worker等着；当然空闲worker太多时，也会停掉一些，这样就提高了性能，也节约了资源。它随着Nginx服务一同启动并驻留内存，当请求到达时，处理之，处理完之后并不结束这个进程，而是继续等待下一次连接。
+
 **PHP-fpm**：是PHP一个实现了FastCGI的管理器，常驻内存，负责管理各PHP-cgi进程，可以提升运行效率，并实现平滑重启(修改php.ini后，php-fpm对此的处理机制是新的worker用新的配置，已经存在的worker处理完手上的活就可以歇着了)。
 
+#### Nginx和PHP-FPM的进程间通信
+
+在Linux上，nginx与php-fpm的通信有tcp socket和unix socket两种方式；
+
+unix socket方式：
+php-fpm.conf: listen = /tmp/php-fpm.sock;
+nginx.conf: fastcgi_pass unix:/tmp/php-fpm.sock;
+Unix socket 又叫 IPC(inter-process communication 进程间通信) socket，用于实现同一主机上的进程间通信;
+Unix socket 不需要经过网络协议栈，不需要打包拆包、计算校验和、维护序号和应答等，只是将应用层数据从一个进程拷贝到另一个进程。所以其效率比 tcp socket 的方式要高，可减少不必要的 tcp 开销。不过，unix socket 高并发时不稳定，连接数爆发时，会产生大量的长时缓存，在没有面向连接协议的支撑下，大数据包可能会直接出错不返回异常。
+
+tcp socket方式：
+php-fpm.conf: listen = 127.0.0.1:9000
+nginx.conf: fastcgi_pass 127.0.0.1:9000
+tcp socket 的优点是可以跨服务器，当 nginx 和 php-fpm 不在同一台机器上时，只能使用这种方式；
+tcp 这样的面向连接的协议，可以更好的保证通信的正确性和完整性，面临高并发业务，则考虑选择使用更可靠的 tcp socket，以负载均衡、内核优化等运维手段维持效率。
 
 
 #### 进程与线程
