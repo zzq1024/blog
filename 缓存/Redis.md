@@ -26,9 +26,37 @@ Redis keys过期有两种方式：被动和主动方式。
 - RDB持久化方式能够在指定的时间间隔能对你的数据进行快照存储.
 - AOF持久化方式记录每次对服务器写的操作,当服务器重启的时候会重新执行这些命令来恢复原始的数据,AOF命令以redis协议追加保存每次写的操作到文件末尾.Redis还能对AOF文件进行后台重写,使得AOF文件的体积不至于过大.
 
-#### 数据结构
+#### 数据类型及底层数据结构
+Redis中的一个对象的结构体表示如下：
+```c
+typedef struct redisObject {  
+    // 数据类型  
+    unsigned type:4;         
+    // 编码方式  
+    unsigned encoding: 4;  
+    // 引用计数  
+    int refcount;  
+    // 指向对象的值  
+    void *ptr;  
+} robj;
+```
 
-数据存在内存中，类似于HashMap，HashMap的优势就是查找和操作的时间复杂度都是O(1)。
+type数据类型包括：
+- REDIS_STRING	字符串对象
+- REDIS_LIST	列表对象
+- REDIS_HASH	哈希对象
+- REDIS_SET	集合对象
+- REDIS_ZSET	有序集合对象
+
+Redis对象底层数据结构:
+- REDIS_ENCODING_INT	long 类型的整数
+- REDIS_ENCODING_EMBSTR	embstr 编码的简单动态字符串
+- REDIS_ENCODING_RAW	简单动态字符串
+- REDIS_ENCODING_HT	字典
+- REDIS_ENCODING_LINKEDLIST	双端链表
+- REDIS_ENCODING_ZIPLIST	压缩列表
+- REDIS_ENCODING_INTSET	整数集合
+- REDIS_ENCODING_SKIPLIST	跳跃表和字典
 
 ##### String（字符串）
 
@@ -36,7 +64,11 @@ Redis keys过期有两种方式：被动和主动方式。
 
 应用：缓存功能；计数器；共享session；频率限制；
 
-数据结构：如果一个String类型的value能够保存为整数，则将对应redisObject 对象的encoding修改为REDIS_ENCODING_INT（整数存储）；如果不能转为整数，保持原有encoding为REDIS_ENCODING_RAW（字符串存储）。
+数据结构：如果一个String类型的value能够保存为整数，则将对应redisObject 对象的encoding修改为REDIS_ENCODING_INT（整数存储）；如果不能转为整数,用字符串存储，embstr和raw两种。embstr应该是Redis 3.0新增的数据结构，如果字符串对象的长度小于39字节，就用embstr对象，否则用传统的raw对象。
+embstr优点：
+1.embstr的创建只需分配一次内存，而raw为两次（一次为sds分配对象，另一次为objet分配对象，embstr省去了第一次）。
+2.相对地，释放内存的次数也由两次变为一次。
+3.embstr的objet和sds放在一起，更好地利用缓存带来的优势。
 
 ##### Hash（哈希）
 
@@ -45,6 +77,8 @@ Hash是一个string类型的field和value的映射表（键值对）；
 应用：hash特别适合用于存储对象，可以Hash数据结构来存储用户信息，商品信息等等。
 
 数据结构：创建新的Hash类型时，默认也使用**压缩列表**存储value（节约内存），保存数据过多时，使用**hash table**。
+ziplist中的哈希对象是按照key1,value1,key2,value2这样的顺序存放来存储的。当对象数目不多且内容不大时，这种方式效率是很高的。
+hashtable的是由dict这个结构来实现的, dict是一个字典，其中的指针dicht ht[2] 指向了两个哈希表，dicht[0] 是用于真正存放数据，dicht[1]一般在哈希表元素过多进行rehash的时候用于中转数据，dictht中的table用于真正存放元素了，每个key/value对用一个dictEntry（链表）表示，放在dictEntry数组中。
 
 ##### List（列表）
 
@@ -53,6 +87,8 @@ Hash是一个string类型的field和value的映射表（键值对）；
 应用：文章列表；关注列表；栈、队列；消息队列（不建议）；
 
 数据结构：当创建新的列表时，默认是使用**压缩列表**作为底层数据结构的，当list内容较多时，使用**双向链表**。
+压缩列表能够节省内存空间，因为它所存储的内容都是在连续的内存区域当中的，当列表对象元素不大，每个元素也不大的时候，就采用ziplist存储，但当数据量过大时就ziplist就不是那么好用了；因为为了保证他存储内容在内存中的连续性，插入的复杂度是O(N)，即每次插入都会重新进行realloc。
+双向链表结构比较简单，节点中存放pre和next两个指针，还有节点相关的信息，当每增加一个node的时候，就需要重新malloc一块内存。
 
 ##### Set（集合）
 
@@ -60,8 +96,8 @@ Hash是一个string类型的field和value的映射表（键值对）；
 
 应用：标签；随机数；微博共同关注、共同喜好
 
-数据结构：创建Set类型的key-value时，如果value能够表示为整数，则使用**intset**类型保存value。
-数据量大时，切换为使用**hash table**保存各个value。
+数据结构：创建Set类型的key-value时，如果value能够表示为整数，则使用**intset**类型保存value。数据量大时，切换为使用**hash table**保存各个value。
+intset是一个有序集合，查找元素的复杂度为O(logN)，但插入时不一定为O(logN)，因为有可能涉及到升级操作，比如当集合里全是int16_t型的整数，这时要插入一个int32_t，那么为了维持集合中数据类型的一致，那么所有的数据都会被转换成int32_t类型，涉及到内存的重新分配，这时插入的复杂度就为O(N)了，intset不支持降级操作。
 
 ##### Sorted Set（有序集合）
 
@@ -69,7 +105,14 @@ Hash是一个string类型的field和value的映射表（键值对）；
 
 应用：排行榜
 
-数据结构：**跳跃表**
+数据结构：一种是ziplist，另一种是skiplist（跳跃表）与dict的结合
+ziplist作为集合和作为哈希对象是一样的，member和score顺序存放，按照score从小到大顺序排列。
+skiplist（跳跃表）是对有序链表进行的扩展，解决了有序链表结构查找特定值困难的问题，查找特定值的时间复杂度为O(logn)，他是一种可以代替平衡树的数据结构，有如下特点：
+- 由很多层结构组成（类似于树形结构）
+- 每一层都是一个有序的链表
+- 最底层(Level 1)的链表包含所有元素
+- 如果一个元素出现在 Level i 的链表中，则它在 Level i 之下的链表也都会出现。
+- 每个节点包含两个指针，一个指向同一链表中的下一个元素，一个指向下面一层的元素。
 
 ##### BitMap
 setbit KEY_NAME OFFSET VALUE;offset是偏移量,value只能是0,1
