@@ -442,7 +442,7 @@ nginx作为前端服务器，解析HTTP请求，通过配置文件找到server�
 unix socket方式：
 php-fpm.conf: listen = /tmp/php-fpm.sock;
 nginx.conf: fastcgi_pass unix:/tmp/php-fpm.sock;
-Unix socket 又叫 IPC(inter-process communication 进程间通信) socket，用于实现同一主机上的进程间通信;
+Unix socket 又叫 IPC(inter-process communication 进程间通信) socket，用于实现**同一主机**上的进程间通信;
 Unix socket 不需要经过网络协议栈，不需要打包拆包、计算校验和、维护序号和应答等，只是将应用层数据从一个进程拷贝到另一个进程。所以其效率比 tcp socket 的方式要高，可减少不必要的 tcp 开销。不过，unix socket 高并发时不稳定，连接数爆发时，会产生大量的长时缓存，在没有面向连接协议的支撑下，大数据包可能会直接出错不返回异常。
 
 tcp socket方式：
