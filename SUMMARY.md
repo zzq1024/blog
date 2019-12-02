@@ -29,6 +29,8 @@
     * [第一节：Java笔记](Java/Java笔记.md)
 * [Golang](Golang/README.md)
     * [第一节：笔记](Golang/笔记.md)
+* [Lua](Lua/README.md)
+    * [第一节：Lua奥义](Lua/Lua奥义.md)
 * [未命名](未命名/README.md)
     * [第一节：安全规范](未命名/安全规范.md)
     * [第二节：日志管理](未命名/日志管理.md)
