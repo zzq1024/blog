@@ -39,55 +39,13 @@
 
 
 
-### Nginx平滑操作
-
-#### 平滑重启
-
-```shell
-# kill -HUP 住进称号或进程号文件路径
-或
-# /usr/local/nginx/sbin/nginx -s reload
-# 注意，修改了配置文件后最好先检查一下修改过的配置文件是否正确，以免重启后Nginx出现错误影响服务器稳定运行
-# /usr/local/nginx/sbin/nginx -t
-
-# nginx的几种信号
-TERM,INT 快速关闭
-QUIT 从容关闭
-HUP 平滑重启，重新加载配置文件
-USR1 重新打开日志文件，在切割日志时用途较大
-USR2 平滑升级可执行程序
-WINCH 从容关闭工作进程
-```
-
-当nginx接收到HUP信号时，它会尝试先解析配置文件（如果指定文件，就使用指定的，否则使用默认的），如果成功，就应用新的配置文件（例如：重新打开日志文件或监听的套接字），之后，nginx运行新的工作进程并从容关闭旧的工作进程，通知工作进程关闭监听套接字，但是继续为当前连接的客户提供服务，所有客户端的服务完成后，旧的工作进程就关闭，如果新的配置文件应用失败，nginx再继续使用早的配置进行工作。
-
-#### 平滑升级
-
-```shell
-一般有两种情况下需要升级Nginx，一种是确实要升级Nginx的版本，另一种是要为Nginx添加新的模块。
-# 升级命令
-# ./configure --prefix=/usr/local/nginx
-# /usr/local/nginx/sbin/nginx -t
-# make upgrade
-```
-
-1、在不停掉老进程的情况下，启动新进程。
-
-2、老进程负责处理仍然没有处理完的请求，但不再接受处理请求
-
-3、新进程接受新请求。
-
-4、老进程处理完所有请求，关闭所有连接后，停止。
-
-
-
 ### Nginx实现高并发
 
 nginx每进来一个request，会有一个worker进程去处理。但不是全程的处理，处理到什么程度呢？处理到可能发生阻塞的地方，比如向上游（后端）服务器转发request，并等待请求返回。那么，这个处理的worker不会这么傻等着，他会在发送完请求后，注册一个事件：“如果upstream返回了，告诉我一声，我再接着干”。于是他就休息去了。此时，如果再有request 进来，他就可以很快再按这种方式处理。而一旦上游服务器返回了，就会触发这个事件，worker才会来接手，这个request才会接着往下走。
 
 
 
-### nginx.conf
+### nginx配置
 #### nginx.conf基础
 - rewrite重定向url（可以美化URL）
 - location优先级：(location =) > (location 完整路径) > (location ^~ 路径) > (location ~,~* 正则顺序，如果有两个相同正则，会直接按第一个正则为准，不会被下边的覆盖) > (location 部分起始路径) > (/)
@@ -220,7 +178,8 @@ http {
 #重写规则permanent表示返回301永久重定向
            rewrite ^/(.*)$ https://$host/$1 permanent;
        }
-
+#重写类型：last：本条规则匹配完成后，继续向下匹配新的location；break：本条规则匹配完成即终止，不再匹配后#面的任何规则；redirect：返回302临时重定向，浏览器地址会显示跳转后的URL地址；permanent：返回301永久重
+#定向，浏览器地址栏会显示跳转后的URL地址；
 #错误处理页面（可选择性配置）
 #error_page 404 /404.html;
 #error_page 500 502 503 504 /50x.html;
@@ -289,24 +248,225 @@ http {
 }
 ```
 #### 内置全局变量
-$args ：这个变量等于请求行中的参数，同$query_string
-$content_length ： 请求头中的Content-length字段。
-$content_type ： 请求头中的Content-Type字段。
-$document_root ： 当前请求在root指令中指定的值。
-$host ： 请求主机头字段，否则为服务器名称。
-$http_user_agent ： 客户端agent信息
-$http_cookie ： 客户端cookie信息
-$limit_rate ： 这个变量可以限制连接速率。
-$request_method ： 客户端请求的动作，通常为GET或POST。
-$remote_addr ： 客户端的IP地址。
-$remote_port ： 客户端的端口。
-$remote_user ： 已经经过Auth Basic Module验证的用户名。
-$request_filename ： 当前请求的文件路径，由root或alias指令与URI请求生成。
-$scheme ： HTTP方法（如http，https）。
-$server_protocol ： 请求使用的协议，通常是HTTP/1.0或HTTP/1.1。
-$server_addr ： 服务器地址，在完成一次系统调用后可以确定这个值。
-$server_name ： 服务器名称。
-$server_port ： 请求到达服务器的端口号。
-$request_uri ： 包含请求参数的原始URI，不包含主机名，如：”/foo/bar.php?arg=baz”。
-$uri ： 不带请求参数的当前URI，$uri不包含主机名，如”/foo/bar.html”。
-$document_uri ： 与$uri相同。
+
+\$args ：这个变量等于请求行中的参数，同\$query_string
+\$content_length ： 请求头中的Content-length字段。
+\$content_type ： 请求头中的Content-Type字段。
+\$document_root ： 当前请求在root指令中指定的值。
+\$host ： 请求主机头字段，否则为服务器名称。
+\$http_user_agent ： 客户端agent信息
+\$http_cookie ： 客户端cookie信息
+\$limit_rate ： 这个变量可以限制连接速率。
+\$request_method ： 客户端请求的动作，通常为GET或POST。
+\$remote_addr ： 客户端的IP地址。
+\$remote_port ： 客户端的端口。
+\$remote_user ： 已经经过Auth Basic Module验证的用户名。
+\$request_filename ： 当前请求的文件路径，由root或alias指令与URI请求生成。
+\$scheme ： HTTP方法（如http，https）。
+\$server_protocol ： 请求使用的协议，通常是HTTP/1.0或HTTP/1.1。
+\$server_addr ： 服务器地址，在完成一次系统调用后可以确定这个值。
+\$server_name ： 服务器名称。
+\$server_port ： 请求到达服务器的端口号。
+\$request_uri ： 包含请求参数的原始URI，不包含主机名，如：”/foo/bar.php?arg=baz”。
+\$uri ： 不带请求参数的当前URI，\$uri不包含主机名，如”/foo/bar.html”。
+\$document_uri ： 与$uri相同。
+
+#### 参数解析
+
+##### root与alias
+
+```nginx
+# 如果一个请求的URI是/t/a.html时，web服务器将会返回服务器上的/www/root/html/t/a.html的文件。
+location ^~ /t/ {
+	root /www/root/html/;
+}
+
+# 如果一个请求的URI是/t/a.html时，web服务器将会返回服务器上的/www/root/html/new_t/a.html的文件。
+# 注意这里是new_t，因为alias会把location后面配置的路径丢弃掉，把当前匹配到的目录指向到指定的目录。
+location ^~ /t/ {
+	alias /www/root/html/new_t/;
+}
+```
+
+
+
+
+
+### 日志分割
+
+#### 1.sh定时脚本
+
+```sh
+#设置log日志的存储地址
+LOG_PATH=/home/soft/nginx/logs
+#设置历史日志的存储地址
+HISTORY_LOG_PATH=/home/soft/nginx/history_logs
+#获取分割日志时所需要的时间当做日志文件名称
+TIME=$(date +%Y-%m-%d)
+#将当前日志备份到指定存储目录
+mv ${LOG_PATH}/access.log ${HISTORY_LOG_PATH}/access_log/${TIME}_access.log
+#发送信号重新打开日志文件
+kill -USR1 $(cat ${LOG_PATH}/nginx.pid)
+```
+
+将sh脚本加入到crontab定时任务中，每天23:59执行：59 23 * * * /home/sh/backups_log.sh。
+
+注意：在没有执行kill -USR1 nginx_pid 之前，即便已经对文件执行了mv命令也只是改变了文件的名称，nginx还是会向新命名的文件中照常写入日志数据。原因在于linux系统中，内核是根据文件描述符来找文件的；
+
+#### 2.logrotate切割nginx日志
+
+logrotate使用cron按时调度执行切割日志；
+
+/etc/logrotate.conf：通用配置文件，可以定义全局默认使用的选项。
+/etc/logrotate.d/xxx：一般需要切割的日子放到这里，编辑文件需要root权限
+
+```nginx
+/www/log_receiver/nginx/*.log {
+    daily
+    dateext
+    compress
+    rotate 7
+    sharedscripts
+    postrotate
+        kill -USR1 `cat /usr/local/nginx_1.10.1/logs/nginx.pid`
+    endscript
+}
+```
+
+参数说明：
+
+daily：每天切割一次文件
+
+dateext：切割的旧文件会加上日期时间
+
+compress：切割的旧文件会被压缩
+
+rotate 7：最多保留多少次周期，这里7是指7天
+
+sharedscripts：sharedscripts用于指明以下是执行轮转前和轮转后自定义执行的命令，比如postrotate和endscript表示，轮转后，执行nginx的重新加载配置文件，避免日志轮转后不写日志。如果要轮转前执行某个命令可以使用prerotate代替postrotate即可,两者可同时存在。
+
+
+
+### Nginx进程结构
+
+#### kill信号量
+
+- TERM/INT：立刻快速的杀掉进程
+
+  kill -TERM 'cat logs/nginx.pid' = nginx -s stop
+
+- QUIT：优雅的关闭进程，即等请求结束后关闭进程
+
+  kill -QUIT 'cat logs/nginx.pid' = nginx -s quit
+
+- HUP：改变配置文件，平滑的重读配置文件
+
+  kill -HUP 'cat logs/nginx.pid' = nginx -s reload
+
+- USR1：重读日志，在日志按月/日分割时有用：对于做日志备份有用  首先对access.log做备份access.log.bak           然后新建access.log，最后 kill -USR1 PID，会把新生成的文件存到access.log里面
+
+  kill -USR1 'cat  logs/nginx.pid` = nginx -s reopen
+
+- USR2：平滑的升级；
+
+- WINCH：优雅的关闭旧的worker进程(配合上USR2来进行升级)
+
+#### 信号管理Nginx父子进程
+
+master进程接收信号：TERM/INT，QUIT，HUP，USR1，USR2，WINCH
+
+worker进程接收信号：TERM/INT，QUIT，USR1，WINCH
+
+一般只给master进程发信号，master进程会将信号传递给worker进程。
+
+#### 平滑重启（nginx -s reload）
+
+1.向master进程发送HUP信号（reload命令）
+
+2.master进程校验配置语法是否正确
+
+3.master进程打开新的监听端口（子进程可以共享使用父进程已经打开的端口；新老worker进程因为是都是同一个master进程的子进程，所以可以同时监听80端口）
+
+4.master进程用新配置启动新的worker子进程
+
+5.master进程向老的worker子进程发送QUIT信号
+
+6.老worker进程关闭监听句柄，处理完当前连接后结束进程
+
+#### 平滑升级（二进制热升级）
+
+一般有两种情况下需要升级Nginx，一种是确实要升级Nginx的版本，另一种是要为Nginx添加新的模块。
+
+```shell
+# 升级命令
+# ./configure --prefix=/usr/local/nginx
+# make
+# 此时，源码目录 build/nginx-1.13.6/objs/下会有nginx二进制文件（及动态模块.so文件），之后用它覆盖掉旧的nginx二进制文件(如果更新动态模块，可以不用替换nginx文件)
+# 热升级时不要执行 make install(只有首次安装时才需要执行)，否则会把旧的Nginx安装目录下文件覆盖掉
+```
+
+1.将旧Nginx文件换成新Nginx文件（/usr/local/openresty/nginx/sbin/nginx，注意备份）
+
+2.向老master进程发送USR2信号
+
+3.老master进程修改pid文件名，加后缀.oldbin（给新的master进程让路）
+
+4.master进程用新Nginx文件启动新master进程（此时新老master、worker进程共存）
+
+5.向老master进程PID发送QUIT信号，关闭老master进程
+
+6.**回滚：**向老master发送HUP，向新master发送QUIT
+
+**注意：**一个父进程退出，而它的一个或多个子进程还在运行，那么那些子进程将成为孤儿进程。孤儿进程将被init进程(进程号为1)所收养，并由init进程对它们完成状态收集工作。
+
+##### 为什么不能在第2步执行nginx reload来热升级？
+
+reload命令会根据配置文件把worker进程更换，但更换的只是配置文件内容，而不是二进制程序（/usr/local/openresty/nginx/sbin/nginx），且master进程也未更换（观察进程号），所以无法实现热升级（更换新版本nginx程序的内容）。
+
+#### 优雅的关闭worker进程
+
+1.设置定时器（在nginx.conf中配置worker_shutdown_timeout，默认不打开）
+
+2.关闭监听句柄（保证worker不会处理新的连接）
+
+3.关闭空闲连接（连接池中未断开的可复用连接）
+
+4.在循环中等待全部连接关闭
+
+5.退出进程（连接全部关闭 或者 时间达到worker_shutdown_timeout 进程立即退出）
+
+
+
+### SSL协议
+
+后面版本又称为TLS；此协议在ISO/OSI模型中的表示层工作；
+
+CSR （证书签名申请）完成后，CA机构（负责颁发证书）会用自己的私钥加密网站的身份信息，生成一对公私钥，公钥会在CA证书中保存（又叫公钥证书），证书订阅人（站点的发布人，开发者）拿到公私钥之后，就会部署到web服务器，比如nginx。当浏览器第一步访问 http 站点时，会从服务器请求证书， nginx 就会把公钥证书发给浏览器，浏览器拿到网站的证书后，自己通过CA的公钥来解密公钥证书，得到网站的身份信息，来确定网站是否安全。
+
+#### TLS加密过程
+
+验证身份 =》 达成安全套件共识 =》 传递秘钥 =》 加密通讯；
+
+HTTPS采用混合加密算法，即共享秘钥加密（对称加密）和公开秘钥加密（非对称加密）。
+通信前准备工作：
+A、数字证书认证机构的公开秘钥（CA公钥）已事先植入到浏览器里；
+B、数字证书认证机构用自己的私有密钥对服务器的公开秘钥做数字签名，生成公钥证书，并颁发给服务器。
+
+1、client hello
+握手第一步是客户端向服务端发送 Client Hello 消息，这个消息里包含了一个客户端生成的随机数 Random1、客户端支持的加密套件（Support Ciphers）和 SSL Version 等信息。
+
+2、server hello
+服务端向客户端发送 Server Hello 消息，这个消息会从 Client Hello 传过来的 Support Ciphers 里确定一份加密套件，这个套件决定了后续加密和生成摘要时具体使用哪些算法，另外还会生成一份随机数 Random2。注意，至此客户端和服务端都拥有了两个随机数（Random1+ Random2），这两个随机数会在后续生成对称秘钥时用到。
+
+3、Certificate
+这一步是服务端将自己的公钥证书下发给客户端。
+
+4、Server Hello Done
+Server Hello Done 通知客户端 Server Hello 过程结束。
+
+5、Certificate Verify
+客户端收到服务端传来的公钥证书后，先从 CA 验证该证书的合法性（CA公钥去解密公钥证书），验证通过后取出证书中的服务端公钥，再生成一个随机数 Random3，再用服务端公钥非对称加密 Random3生成 PreMaster Key。
+
+6、Client Key Exchange
+上面客户端根据服务器传来的公钥生成了 PreMaster Key，Client Key Exchange 就是将这个 key 传给服务端，服务端再用自己的私钥解出这个 PreMaster Key 得到客户端生成的 Random3。至此，客户端和服务端都拥有 Random1 + Random2 + Random3，两边再根据同样的算法就可以生成一份秘钥，握手结束后的应用层数据都是使用这个秘钥进行对称加密。为什么要使用三个随机数呢？这是因为 SSL/TLS 握手过程的数据都是明文传输的，并且多个随机数种子来生成秘钥不容易被破解出来。
+
