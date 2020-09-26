@@ -48,7 +48,11 @@ nginx每进来一个request，会有一个worker进程去处理。但不是全�
 ### nginx配置
 #### nginx.conf基础
 - rewrite重定向url（可以美化URL）
-- location优先级：(location =) > (location 完整路径) > (location ^~ 路径) > (location ~,~* 正则顺序，如果有两个相同正则，会直接按第一个正则为准，不会被下边的覆盖) > (location 部分起始路径) > (/)
+
+- location优先级：(location =) > (location 完整路径) > (location ^~ 路径，匹配到此命令后，会禁止正则匹配) > (location ~,~* 正则顺序，如果有两个相同正则，会直接按第一个正则为准，不会被下边的覆盖) > (location 部分起始路径，前缀匹配) > (/)
+
+  ![avatar](/Users/mac/Desktop/www/location_shunxun.jpg)
+
 - 如果直接访问ip:port（对应多个HOST），会访问第一个匹配的（引入文件顺序，文件内server配置顺序）；
   如果直接访问host（对应多个port）,会访问第一个匹配的（引入文件顺序，文件内server配置顺序）
 #### nginx.conf配置结构
@@ -153,10 +157,10 @@ http {
        charset utf-8; #编码格式
        set $static_root_dir "/Users/doing/static";
        location /app1 { #反向代理的路径（和upstream绑定），location后面设置映射的路径 
-           proxy_pass http://zp_server1;
+           proxy_pass http://zp_server1;#不携带uri，则将客户端请求中的uri直接转发给上游
        } 
        location /app2 {  
-           proxy_pass http://zp_server2;
+           proxy_pass http://zp_server2/www;//携带uri，将location参数中匹配到的app2替换为www，转发给上游，例如请求http://{host}/app2/abc，转发到上游：http://zp_server2/www/abc
        } 
        location ~ ^/(images|javascript|js|css|flash|media|static)/ {  #静态文件，nginx自己处理
            root $static_root_dir;
@@ -178,7 +182,10 @@ http {
 #重写规则permanent表示返回301永久重定向
            rewrite ^/(.*)$ https://$host/$1 permanent;
        }
-#重写类型：last：本条规则匹配完成后，继续向下匹配新的location；break：本条规则匹配完成即终止，不再匹配后#面的任何规则；redirect：返回302临时重定向，浏览器地址会显示跳转后的URL地址；permanent：返回301永久重
+#重写类型：last：本条规则匹配完成后，继续向下匹配新的location；
+#break：本条规则匹配完成即终止，1.停止当前脚本指令的执行，2.不再匹配后面的任何location规则；
+#redirect：返回302临时重定向，浏览器地址会显示跳转后的URL地址；
+#permanent：返回301永久重
 #定向，浏览器地址栏会显示跳转后的URL地址；
 #错误处理页面（可选择性配置）
 #error_page 404 /404.html;
