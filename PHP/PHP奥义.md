@@ -52,6 +52,8 @@ echo 是语法结构，也就是关键字，不是函数。使用的时候不用
 
 因为在不写php结束标签时，默认从开始标签往后都是php代码，如果有其他代码，那就会报错。php只能运行在php标签里面的脚本，在脚本之外的所有字符，包括你看不见的空格或者回车，制表符号，都是作为输出内容会response到客户端的，这样就有可能会产生意想不到的事情。例如文件里面使用了header函数，这个文件同时又包含了另外一个文件，并且被包含的文件的php标签外有空字符，这个时候会报header already send的错误。我们查看一些网页的源代码看到的开头部分有很多空格和换行，就是因为这个原因导致的。
 
+PHP产生的warning是会在头部返回之前输出的，所以会被算入头部的数据;
+
 #### $_SERVER常量
 
 * $_SERVER['SERVER_ADDR']//服务器IP
@@ -177,6 +179,38 @@ PHP中， = 赋值时，普通对象是深拷贝，**但对对象来说，是浅
 7.unset()函数只能在变量值占用内存空间超过256字节时才会释放内存空间。(PHP内核的gc垃圾回收机制决定)
 
 8.有当指向该变量的所有变量（如引用变量）都被销毁后，才会释放内存
+
+#### yield
+
+- 使用yield迭代器，内存占用极小，因为生成器不是一次生成一个数组存放在内存中，而是使用时循环一次才执行一次；
+
+- 协程的支持是在迭代生成器的基础上, 增加了可以回送数据给生成器的功能(调用者发送数据给被调用的生成器函数). 这就把生成器到调用者的单向通信转变为两者之间的双向通信.传递数据的功能是通过迭代器的send()方法实现的.
+
+  ```
+  <?php
+  function gen() {
+      $ret = (yield 'yield1');
+      var_dump($ret);
+      $ret = (yield 'yield2');
+      var_dump($ret);
+  }
+  $gen = gen();
+  var_dump($gen->current());    // string(6) "yield1"
+  var_dump($gen->send('ret1')); // string(4) "ret1"   (the first var_dump in gen)
+                                // string(6) "yield2" (the var_dump of the ->send() return value)
+  var_dump($gen->send('ret2')); // string(4) "ret2"   (again from within gen)
+                                // NULL               (the return value of ->send())
+  ?>
+  
+  //结果
+  string(6) "yield1"
+  string(4) "ret1"
+  string(6) "yield2"
+  string(4) "ret2"
+  NULL
+  
+  ```
+
 
 
 
