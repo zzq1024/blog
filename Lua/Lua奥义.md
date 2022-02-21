@@ -398,3 +398,36 @@ cosocket 是 OpenResty 中的专有名词，是把协程和网络套接字的英
   ```
 
 - 整个请求中的日志先缓存起来，在log_by_lua阶段写日志。
+
+### 元表
+
+在 Lua 5.1 语言中，元表 *(metatable)* 的表现行为类似于 C++ 语言中的操作符重载，例如我们可以重载 "__add" 元方法 *(metamethod)*，来计算两个 Lua 数组的并集；或者重载 "__index" 方法，来定义我们自己的 Hash 函数。Lua 提供了两个十分重要的用来处理元表的方法，如下：
+
+- setmetatable(table, metatable)：此方法用于为一个表设置元表。
+- getmetatable(table)：此方法用于获取表的元表对象。
+
+#### _index元方法
+
+下面的例子中，我们实现了在表中查找键不存在时转而在元表中查找该键的功能：
+
+```lua
+mytable = setmetatable({key1 = "value1"},   --原始表
+  {__index = function(self, key)            --重载函数
+    if key == "key2" then
+      return "metatablevalue"
+    end
+  end
+})
+
+print(mytable.key1,mytable.key2)  --> output：value1 metatablevalue
+```
+
+关于 __index 元方法，有很多比较高阶的技巧，例如：__index 的元方法不需要非是一个函数，他也可以是一个表;
+
+当 t[2] 去在原始表中找不到时，在 __index 的表中去寻找，然后找到了 [2] = "world" 这个键值对
+
+```lua
+t = setmetatable({[1] = "hello"}, {__index = {[2] = "world"}})
+print(t[1], t[2])   -->hello world
+```
+
