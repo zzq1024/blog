@@ -236,16 +236,20 @@ http {
      ssl_session_cache shared:SSL:1m;
      ssl_session_timeout 5m;
    }
-
+   
+   #限制某个 IP 在指定时间内的连接数
+   limit_conn_zone $binary_remote_addr zone=addr:10m;
 #配置访问控制：每个IP一秒钟只处理一个请求，超出的请求会被delayed
 #语法：limit_req_zone  $session_variable  zone=name:size  rate=rate (为session会话状态分配一个大小为size的内存存储区，限制了每秒（分、小时）只接受rate个IP的频率)
-   limit_req_zone  $binary_remote_addr zone=req_one:10m   rate=1r/s nodelay;
+   limit_req_zone  $binary_remote_addr zone=req_one:10m rate=1r/s nodelay;
    location /pay {
         proxy_set_header Host $http_host;
         proxy_set_header X-Real_IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-#访问控制：limit_req zone=name [burst=number] [nodelay];
-        limit_req zone=req_one burst=5; #burst=5表示超出的请求(被delayed)如果超过5个，那些请求会被终止（默认返回503）
+        #访问控制（连接数）：来限制每个ip访问，最多只能有一个在线
+        limit_conn addr 1;
+		#访问控制（请求数）：limit_req zone=name [burst=number] [nodelay];
+        limit_req zone=req_one burst=5; #在limti_req_zone中配置的rate来处理请求的同时，设置了一个大小为5的缓冲队列，对于峰值处理数量之外的请求，直接丢弃，那些请求会被终止（默认返回503）
         proxy_pass http://mysvr1;
    }
 

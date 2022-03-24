@@ -38,7 +38,7 @@
 
 优点：consumer可以自主控制拉取速率，并决定是否批量的从broker拉取数据；
 
-缺点：如果broker没有可供消费的消息，将导致consumer不断在循环中轮询，直到新消息到t达。为了避免这点，Kafka有个参数可以让consumer阻塞知道新消息到达（当然也可以阻塞知道消息的数量达到某个特定的量这样就可以批量发送）；
+缺点：如果broker没有可供消费的消息，将导致consumer不断在循环中轮询，直到新消息到t达。为了避免这点，Kafka有个参数可以让consumer阻塞直到新消息到达（当然也可以阻塞知道消息的数量达到某个特定的量这样就可以批量发送）；
 
 
 
@@ -76,4 +76,26 @@ kafka采用由Producer，broker和consumer共享的标准化二进制消息格�
 
 Kafka采用了端到端的压缩：因为有“消息集”的概念，客户端的消息可以一起被压缩后送到服务端，并以压缩后的格式写入日志文件，以压缩的格式发送到consumer，消息从producer发出到consumer拿到都被是压缩的，只有在consumer使用的时候才被解压缩，所以叫做“端到端的压缩”。
 
-##### 
+### 数据不丢失
+
+从三个方面保证数据不丢失；
+
+#### 生产者
+
+生产者有两个调用API，producer.send(msg) 不带回调方法，producer.send(msg,callback) 带回调方法；此时要使用带有回调方法的API，可以根据回调函数得知消息是否发送成功，如果发送失败我们异常处理；
+
+配置消息确认规则：
+
+- acks = 0；生产者完全不管broker服务器是否收到消息，将记录添加到缓冲区中并视为已发送；
+- acks = 1；当leader接受到消息就会直接给客户端返回成功；此时没来得及同步到follower，如果挂掉会导致数据丢失；
+- acks = -1 或者 acks = all；当leader接受到消息，并同步到了一定数量的follower，才向生产者发生成功的消息，同步到的follower数量由 broker 端的 `min.insync.replicas` 决定；
+
+#### Broker端
+
+- unclean.leader.election.enable：这个参数是控制leader replica出问题了以后follower replica竞选leader replica资格的，我们把设置为false，意思就是如果follower replica如果落后[leader replica](https://www.zhihu.com/search?q=leader+replica&search_source=Entity&hybrid_search_source=Entity&hybrid_search_extra=%7B%22sourceType%22%3A%22article%22%2C%22sourceId%22%3A%22141084340%22%7D)太多就不能参与竞选。
+- replication.factor：这个参数设置的是partition副本的个数，如果我们要想保证数据不丢，这个副本数需要设置成大于1。
+- min.insync.replicas：这个参数要跟生产者里的acks参数配合使用，当生产者acks=-1时，服务端的ISR列表里的所有副本都写入成功，才会给生产者返回成功的响应。而min.insync.replicas这个参数就是控制ISR列表的，假设min.insync.replicas=1，这就意味着ISR列表里可以只有一个副本，这个副本就是leader replica，这个时候即使acks设置的是-1，但其实消息只发送到leader replica，以后就返回成功的响应了
+
+#### 消费者
+
+消费者是可以自动提交offset的，但是如果是自动提交offset，可能会丢数据；所以关闭自动提交，处理完任务再手动提交；
